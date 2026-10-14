@@ -17,7 +17,7 @@ Las columnas en dólares se calculan con el tipo de cambio documentado en `confi
 
 Si la API del BCRA no está disponible al ejecutar `generate_data.py`, se usa una tasa de respaldo fija documentada en el script y en el JSON (`fallback: true`).
 
-Conversión reutilizable: módulo `scripts/fx.py` (`ars_to_usd`, `usd_to_ars`, `load_exchange_config`).
+Conversión y formato reutilizable: módulo `scripts/fx.py` (`ars_to_usd`, `usd_to_ars`, `load_exchange_config`, `format_kpi_ars_usd`, formatos Excel ARS/USD).
 
 ## Cómo regenerar todo
 
@@ -57,13 +57,17 @@ Estado de resultados (P&L), flujo de caja y presupuesto vs. real.
 
 ![Dashboard Financiero](images/dashboard_financiero.png)
 
-**KPIs destacados (último mes de la serie ficticia):**
+**KPIs destacados (último mes, 2026-10 — ARS con equivalente USD):**
 
-- **Ingresos** — ventas netas mensuales en ARS y USD derivado.
-- **EBITDA** — margen operativo antes de depreciación e impuestos.
-- **Resultado neto** — cierre después de resultado financiero e impuesto simulado.
-- **Flujo de caja neto** — operativo + inversiones + financiero.
-- **Presupuesto vs. real** — desvío por concepto (ingresos, costos, gastos, EBITDA).
+| Métrica | Valor |
+| --- | --- |
+| Ingresos | ARS 115,6 M (USD 76,3 k) |
+| EBITDA (margen 23,1 %) | ARS 26,7 M (USD 17,6 k) |
+| Resultado neto (margen 16,6 %) | ARS 19,2 M (USD 12,7 k) |
+| Flujo neto del mes | ARS 3,5 M (USD 2,3 k) |
+| Saldo de caja acumulado | ARS 357,4 M (USD 236,0 k) |
+
+El flujo operativo se arma como **resultado neto + depreciación ± variación de capital de trabajo**; inversiones (capex) y financiamiento aparecen en meses puntuales. **Presupuesto vs. real** por concepto (ingresos, costos, gastos, EBITDA).
 
 Archivos: `data/financiero_*.csv` · Excel: `excel/dashboard_financiero.xlsx`
 
@@ -75,13 +79,16 @@ Ventas por mes, producto, canal, región y ranking de clientes (nombres ficticio
 
 ![Dashboard Ventas](images/dashboard_ventas.png)
 
-**KPIs destacados:**
+**KPIs destacados (2026-10):**
 
-- **Ventas del mes** y **acumulado 24 meses** en ARS.
-- **Unidades** vendidas y ticket promedio simulado.
-- **Mix por canal** — mayorista, retail, e-commerce y venta directa.
-- **Regiones** — CABA, GBA y interior.
-- **Top clientes** — p. ej. *Supermercados Don Horacio S.A.*, *Distribuidora La Ribera S.R.L.* (ficticios).
+| Métrica | Valor |
+| --- | --- |
+| Ventas del mes | ARS 122,5 M (USD 80,9 k) |
+| Acumulado 24 meses | ARS 2.479,7 M (USD 1,6 M) |
+| Unidades / ticket | 27.227 u. · ticket ARS 4,5 k (USD 3,0) |
+| Top cliente 12m | *Hipermercado Andino* — ARS 42,4 M (USD 28,0 k) |
+
+**Mix por canal** (mayorista ~39 %, retail, e-commerce, venta directa), **ventas por región** y ranking de clientes ficticios.
 
 Archivos: `data/ventas_*.csv` · Excel: `excel/dashboard_ventas.xlsx`
 
@@ -93,12 +100,15 @@ Costos fijos y variables, por centro de costo, costo unitario y variaciones vs. 
 
 ![Dashboard Costos](images/dashboard_costos.png)
 
-**KPIs destacados:**
+**KPIs destacados (2026-10):**
 
-- **Costo total** del mes y desglose **fijo / variable**.
-- **Centros de costo** — producción, logística, comercial y administración.
-- **Costo unitario** por SKU ficticio.
-- **Variación** real vs. costo estándar y evolución del costo por unidad producida.
+| Métrica | Valor |
+| --- | --- |
+| Costo total | ARS 81,4 M (USD 53,7 k) |
+| Fijos / variables | ARS 27,1 M · ARS 54,3 M |
+| Variación vs. estándar | −1,28 % |
+
+**Centros de costo** (producción ~42 %), **costo unitario** por SKU y evolución del costo por unidad producida.
 
 Archivos: `data/costos_*.csv` · Excel: `excel/dashboard_costos.xlsx`
 

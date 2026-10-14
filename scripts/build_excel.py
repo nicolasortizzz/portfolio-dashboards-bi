@@ -11,6 +11,8 @@ from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from fx import excel_ars_format, excel_usd_format, format_kpi_ars_usd, load_exchange_config
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 EXCEL = ROOT / "excel"
@@ -75,6 +77,7 @@ def kpi_block(ws, kpis: list[tuple[str, str]], start_row: int = 3) -> None:
 
 
 def build_financiero() -> Path:
+    rate = load_exchange_config()["ars_per_usd"]
     pl = pd.read_csv(DATA / "financiero_estado_resultados.csv")
     cf = pd.read_csv(DATA / "financiero_flujo_caja.csv")
     bvr = pd.read_csv(DATA / "financiero_presupuesto_vs_real.csv")
@@ -83,14 +86,16 @@ def build_financiero() -> Path:
     ws_kpi = wb.active
     ws_kpi.title = "KPIs"
     last = pl.iloc[-1]
+    last_cf = cf.iloc[-1]
     kpi_block(
         ws_kpi,
         [
-            ("Ingresos último mes (ARS)", f"${last['ingresos_ars']:,.0f}"),
-            ("EBITDA último mes (ARS)", f"${last['ebitda_ars']:,.0f}"),
-            ("Resultado neto último mes (ARS)", f"${last['resultado_neto_ars']:,.0f}"),
+            ("Ingresos último mes", format_kpi_ars_usd(last["ingresos_ars"], rate)),
+            ("EBITDA último mes", format_kpi_ars_usd(last["ebitda_ars"], rate)),
+            ("Resultado neto último mes", format_kpi_ars_usd(last["resultado_neto_ars"], rate)),
             ("Margen EBITDA", f"{last['ebitda_ars'] / last['ingresos_ars'] * 100:.1f}%"),
-            ("Flujo neto último mes (ARS)", f"${cf.iloc[-1]['flujo_neto_ars']:,.0f}"),
+            ("Flujo neto último mes", format_kpi_ars_usd(last_cf["flujo_neto_ars"], rate)),
+            ("Saldo de caja", format_kpi_ars_usd(last_cf["saldo_caja_ars"], rate)),
         ],
     )
 
@@ -99,8 +104,8 @@ def build_financiero() -> Path:
     apply_number_formats(
         ws_pl,
         list(pl.columns),
-        {c: '"$"#,##0' for c in pl.columns if c.endswith("_ars")}
-        | {c: '"$"#,##0.00' for c in pl.columns if c.endswith("_usd")},
+        {c: excel_ars_format() for c in pl.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in pl.columns if c.endswith("_usd")},
     )
     ws_pl.freeze_panes = "A2"
     autosize(ws_pl, ncols)
@@ -121,8 +126,8 @@ def build_financiero() -> Path:
     apply_number_formats(
         ws_cf,
         list(cf.columns),
-        {c: '"$"#,##0' for c in cf.columns if c.endswith("_ars")}
-        | {c: '"$"#,##0.00' for c in cf.columns if c.endswith("_usd")},
+        {c: excel_ars_format() for c in cf.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in cf.columns if c.endswith("_usd")},
     )
     ws_cf.freeze_panes = "A2"
     autosize(ws_cf, nc_cf)
@@ -131,7 +136,7 @@ def build_financiero() -> Path:
     bar.type = "col"
     bar.title = "Flujo neto mensual (ARS)"
     cats = Reference(ws_cf, min_col=2, min_row=2, max_row=end_cf)
-    data = Reference(ws_cf, min_col=9, min_row=1, max_row=end_cf)
+    data = Reference(ws_cf, min_col=list(cf.columns).index("flujo_neto_ars") + 1, min_row=1, max_row=end_cf)
     bar.add_data(data, titles_from_data=True)
     bar.set_categories(cats)
     ws_cf.add_chart(bar, "K2")
@@ -141,8 +146,8 @@ def build_financiero() -> Path:
     apply_number_formats(
         ws_b,
         list(bvr.columns),
-        {c: '"$"#,##0' for c in bvr.columns if "ars" in c}
-        | {c: "0.0%" if c == "variacion_pct" else '"$"#,##0.00' for c in bvr.columns if c.endswith("_usd")},
+        {c: excel_ars_format() for c in bvr.columns if "ars" in c}
+        | {c: "0.0%" if c == "variacion_pct" else excel_usd_format() for c in bvr.columns if c.endswith("_usd")},
     )
     if "variacion_pct" in bvr.columns:
         idx = list(bvr.columns).index("variacion_pct") + 1
@@ -158,6 +163,7 @@ def build_financiero() -> Path:
 
 
 def build_ventas() -> Path:
+    rate = load_exchange_config()["ars_per_usd"]
     mensual = pd.read_csv(DATA / "ventas_mensual.csv")
     canal = pd.read_csv(DATA / "ventas_por_canal.csv")
     region = pd.read_csv(DATA / "ventas_por_region.csv")
@@ -169,11 +175,11 @@ def build_ventas() -> Path:
     kpi_block(
         ws_kpi,
         [
-            ("Ventas último mes (ARS)", f"${mensual.iloc[-1]['ventas_netas_ars']:,.0f}"),
-            ("Ventas acumuladas 24m (ARS)", f"${mensual['ventas_netas_ars'].sum():,.0f}"),
-            ("Unidades último mes", f"{mensual.iloc[-1]['unidades']:,}"),
+            ("Ventas último mes", format_kpi_ars_usd(mensual.iloc[-1]["ventas_netas_ars"], rate)),
+            ("Ventas acumuladas 24m", format_kpi_ars_usd(mensual["ventas_netas_ars"].sum(), rate)),
+            ("Unidades último mes", f"{mensual.iloc[-1]['unidades']:,}".replace(",", ".")),
             ("Top cliente (ficticio)", clientes.iloc[0]["cliente"]),
-            ("Ventas top cliente 12m (ARS)", f"${clientes.iloc[0]['ventas_12m_ars']:,.0f}"),
+            ("Ventas top cliente 12m", format_kpi_ars_usd(clientes.iloc[0]["ventas_12m_ars"], rate)),
         ],
     )
 
@@ -182,8 +188,8 @@ def build_ventas() -> Path:
     apply_number_formats(
         ws_m,
         list(mensual.columns),
-        {c: '"$"#,##0' for c in mensual.columns if c.endswith("_ars")}
-        | {c: '"$"#,##0.00' for c in mensual.columns if c.endswith("_usd")},
+        {c: excel_ars_format() for c in mensual.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in mensual.columns if c.endswith("_usd")},
     )
     ws_m.freeze_panes = "A2"
     autosize(ws_m, nc_m)
@@ -200,7 +206,7 @@ def build_ventas() -> Path:
     canal_last = canal[canal["mes"] == last_month]
     ws_c = wb.create_sheet("Por_Canal")
     end_c, nc_c = write_df(ws_c, canal_last)
-    apply_number_formats(ws_c, list(canal_last.columns), {c: '"$"#,##0' for c in canal_last.columns if c.endswith("_ars")})
+    apply_number_formats(ws_c, list(canal_last.columns), {c: excel_ars_format() for c in canal_last.columns if c.endswith("_ars")})
     ws_c.freeze_panes = "A2"
 
     pie = PieChart()
@@ -214,7 +220,7 @@ def build_ventas() -> Path:
     reg_last = region[region["mes"] == last_month]
     ws_r = wb.create_sheet("Por_Region")
     end_r, nc_r = write_df(ws_r, reg_last)
-    apply_number_formats(ws_r, list(reg_last.columns), {c: '"$"#,##0' for c in reg_last.columns if c.endswith("_ars")})
+    apply_number_formats(ws_r, list(reg_last.columns), {c: excel_ars_format() for c in reg_last.columns if c.endswith("_ars")})
     ws_r.freeze_panes = "A2"
 
     bar = BarChart()
@@ -230,7 +236,8 @@ def build_ventas() -> Path:
     apply_number_formats(
         ws_cli,
         list(clientes.columns),
-        {c: '"$"#,##0' for c in clientes.columns if c.endswith("_ars")},
+        {c: excel_ars_format() for c in clientes.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in clientes.columns if c.endswith("_usd")},
     )
     ws_cli.freeze_panes = "A2"
 
@@ -249,6 +256,7 @@ def build_ventas() -> Path:
 
 
 def build_costos() -> Path:
+    rate = load_exchange_config()["ars_per_usd"]
     fv = pd.read_csv(DATA / "costos_fijo_variable.csv")
     cc = pd.read_csv(DATA / "costos_por_centro.csv")
     unit = pd.read_csv(DATA / "costos_unitarios.csv")
@@ -261,17 +269,22 @@ def build_costos() -> Path:
     kpi_block(
         ws_kpi,
         [
-            ("Costo total último mes (ARS)", f"${last['costo_total_ars']:,.0f}"),
-            ("Costos fijos (ARS)", f"${last['costos_fijos_ars']:,.0f}"),
-            ("Costos variables (ARS)", f"${last['costos_variables_ars']:,.0f}"),
-            ("Unidades producidas", f"{last['unidades_producidas']:,}"),
-            ("Variación costo último mes", f"{var.iloc[-1]['variacion_pct']:.2f}%"),
+            ("Costo total último mes", format_kpi_ars_usd(last["costo_total_ars"], rate)),
+            ("Costos fijos", format_kpi_ars_usd(last["costos_fijos_ars"], rate)),
+            ("Costos variables", format_kpi_ars_usd(last["costos_variables_ars"], rate)),
+            ("Unidades producidas", f"{last['unidades_producidas']:,}".replace(",", ".")),
+            ("Variación costo último mes", f"{var.iloc[-1]['variacion_pct']:.2f}%".replace(".", ",")),
         ],
     )
 
     ws_fv = wb.create_sheet("Fijo_Variable")
     end_fv, nc_fv = write_df(ws_fv, fv)
-    apply_number_formats(ws_fv, list(fv.columns), {c: '"$"#,##0' for c in fv.columns if c.endswith("_ars")})
+    apply_number_formats(
+        ws_fv,
+        list(fv.columns),
+        {c: excel_ars_format() for c in fv.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in fv.columns if c.endswith("_usd")},
+    )
     ws_fv.freeze_panes = "A2"
     autosize(ws_fv, nc_fv)
 
@@ -289,7 +302,12 @@ def build_costos() -> Path:
     cc_last = cc[cc["mes"] == last_month]
     ws_cc = wb.create_sheet("Por_Centro")
     end_cc, _ = write_df(ws_cc, cc_last)
-    apply_number_formats(ws_cc, list(cc_last.columns), {c: '"$"#,##0' for c in cc_last.columns if c.endswith("_ars")})
+    apply_number_formats(
+        ws_cc,
+        list(cc_last.columns),
+        {c: excel_ars_format() for c in cc_last.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in cc_last.columns if c.endswith("_usd")},
+    )
     ws_cc.freeze_panes = "A2"
 
     pie = PieChart()
@@ -303,7 +321,12 @@ def build_costos() -> Path:
     unit_last = unit[unit["mes"] == last_month]
     ws_u = wb.create_sheet("Costo_Unitario")
     end_u, _ = write_df(ws_u, unit_last)
-    apply_number_formats(ws_u, list(unit_last.columns), {c: '"$"#,##0.00' for c in unit_last.columns if "unitario" in c})
+    apply_number_formats(
+        ws_u,
+        list(unit_last.columns),
+        {c: excel_ars_format() for c in unit_last.columns if "unitario" in c and c.endswith("_ars")}
+        | {c: excel_usd_format() for c in unit_last.columns if "unitario" in c and c.endswith("_usd")},
+    )
     ws_u.freeze_panes = "A2"
 
     bar = BarChart()
@@ -316,7 +339,12 @@ def build_costos() -> Path:
 
     ws_v = wb.create_sheet("Variaciones")
     end_v, _ = write_df(ws_v, var)
-    apply_number_formats(ws_v, list(var.columns), {c: '"$"#,##0' for c in var.columns if c.endswith("_ars")})
+    apply_number_formats(
+        ws_v,
+        list(var.columns),
+        {c: excel_ars_format() for c in var.columns if c.endswith("_ars")}
+        | {c: excel_usd_format() for c in var.columns if c.endswith("_usd")},
+    )
     ws_v.freeze_panes = "A2"
 
     line2 = LineChart()

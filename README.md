@@ -53,7 +53,7 @@ Un archivo **Power BI (.pbix)** puede armarse importando los CSV de `data/` y re
 
 ## 1. Dashboard Financiero
 
-Estado de resultados (P&amp;L), flujo de caja y presupuesto vs. real.
+Estado de resultados (P&L), flujo de caja y presupuesto vs. real.
 
 ![Dashboard Financiero](images/dashboard_financiero.png)
 

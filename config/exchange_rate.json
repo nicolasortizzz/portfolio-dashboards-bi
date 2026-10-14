@@ -1,0 +1,8 @@
+{
+  "ars_per_usd": 1514.5655,
+  "fecha": "2026-10-14",
+  "fuente": "API BCRA Estadísticas Monetarias v4.0 — variable 5",
+  "tipo": "Tipo de cambio mayorista de referencia (Comunicación A 3500)",
+  "bcra_url": "https://www.bcra.gob.ar/",
+  "fallback": false
+}

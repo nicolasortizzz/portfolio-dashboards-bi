@@ -155,23 +155,60 @@ def generate_financiero(rng: random.Random, months: list[pd.Timestamp], rate: fl
             }
         )
 
-        op_in = ebitda * rng.uniform(0.85, 0.95)
-        op_out = cogs * 0.92 + opex * 0.88
-        inv = ingresos * rng.uniform(-0.06, 0.04)
-        fin_cf = fin * -1
-        net_cf = op_in - op_out + inv + fin_cf
+    saldo_caja = 42_000_000.0
+    prev_wc = None
+    for i, (m, pl_row) in enumerate(zip(months, rows_pl)):
+        ingresos = pl_row["ingresos_ars"]
+        cogs = pl_row["costo_ventas_ars"]
+        opex = pl_row["gastos_operativos_ars"]
+        ebitda = pl_row["ebitda_ars"]
+        net = pl_row["resultado_neto_ars"]
+        dep = pl_row["depreciacion_ars"]
+        fin = pl_row["resultado_financiero_ars"]
+
+        ar = ingresos * rng.uniform(0.38, 0.44)
+        inventario = cogs * rng.uniform(0.22, 0.30)
+        ap = cogs * rng.uniform(0.26, 0.34)
+        wc = ar + inventario - ap
+        delta_wc = 0.0 if prev_wc is None else wc - prev_wc
+        prev_wc = wc
+
+        # Flujo operativo: resultado neto + partidas no monetarias − Δ capital de trabajo
+        flujo_operativo = net + dep - delta_wc
+
+        if i % 9 == 5:
+            capex = -ingresos * rng.uniform(0.10, 0.16)
+        elif rng.random() < 0.12:
+            capex = -ingresos * rng.uniform(0.04, 0.07)
+        else:
+            capex = -ingresos * rng.uniform(0.008, 0.025)
+
+        if i % 11 == 3:
+            flujo_financiero = ingresos * rng.uniform(0.06, 0.11)
+        elif i % 13 == 7:
+            flujo_financiero = -ingresos * rng.uniform(0.04, 0.07)
+        else:
+            flujo_financiero = -fin * rng.uniform(0.4, 0.9)
+
+        flujo_neto = flujo_operativo + capex + flujo_financiero
+        saldo_caja += flujo_neto
+
         rows_cf.append(
             {
                 "empresa": COMPANY,
                 "mes": m.strftime("%Y-%m"),
-                "flujo_operativo_ars": round(op_in - op_out, 2),
-                "flujo_operativo_usd": ars_to_usd(op_in - op_out, rate),
-                "inversiones_ars": round(inv, 2),
-                "inversiones_usd": ars_to_usd(inv, rate),
-                "flujo_financiero_ars": round(fin_cf, 2),
-                "flujo_financiero_usd": ars_to_usd(fin_cf, rate),
-                "flujo_neto_ars": round(net_cf, 2),
-                "flujo_neto_usd": ars_to_usd(net_cf, rate),
+                "flujo_operativo_ars": round(flujo_operativo, 2),
+                "flujo_operativo_usd": ars_to_usd(flujo_operativo, rate),
+                "variacion_ct_ars": round(-delta_wc, 2),
+                "variacion_ct_usd": ars_to_usd(-delta_wc, rate),
+                "inversiones_ars": round(capex, 2),
+                "inversiones_usd": ars_to_usd(capex, rate),
+                "flujo_financiero_ars": round(flujo_financiero, 2),
+                "flujo_financiero_usd": ars_to_usd(flujo_financiero, rate),
+                "flujo_neto_ars": round(flujo_neto, 2),
+                "flujo_neto_usd": ars_to_usd(flujo_neto, rate),
+                "saldo_caja_ars": round(saldo_caja, 2),
+                "saldo_caja_usd": ars_to_usd(saldo_caja, rate),
             }
         )
 

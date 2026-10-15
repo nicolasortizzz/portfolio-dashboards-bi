@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboards BI para pymes · Nicolas Ortiz</title>
+<meta name="description" content="Portfolio interactivo: dashboards financieros, de ventas y de costos para pymes (datos ficticios).">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Nicolas Ortiz</h1>
+    <p>Economista | Dashboards en Power BI y Excel | Reportes financieros automatizados para pymes</p>
+  </div>
+  <nav class="links">
+    <a href="https://github.com/nicolasortizzz" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://www.linkedin.com/in/nicolas-ortizzz/" target="_blank" rel="noopener">LinkedIn</a>
+    <button id="theme" class="btn ghost" title="Modo claro/oscuro" aria-label="Cambiar tema">◐</button>
+  </nav>
+</header>
+<div class="notice">⚠️ <b>Datos ficticios.</b> Empresa de ejemplo (<span id="empresa"></span>) generada para demostrar el análisis. No representa a ningún cliente real.</div>
+<div class="bar">
+  <div class="tabs" role="tablist">
+    <button data-tab="financiero" class="tab">Financiero</button>
+    <button data-tab="ventas" class="tab">Ventas</button>
+    <button data-tab="costos" class="tab">Costos</button>
+  </div>
+  <div class="filters">
+    <label>Desde <select id="from"></select></label>
+    <label>Hasta <select id="to"></select></label>
+    <span class="seg" id="presets"><button data-p="3">3M</button><button data-p="6">6M</button><button data-p="12">12M</button><button data-p="0">Todo</button></span>
+    <span class="seg" id="ccy"><button data-c="ARS">ARS</button><button data-c="USD">USD</button></span>
+  </div>
+</div>
+<div class="fxnote" id="fxnote"></div>
+<main id="main"></main>
+<footer>Construido con HTML + ECharts · Datos generados en Python (<code>data/*.csv</code>) · <a href="https://github.com/nicolasortizzz/portfolio-dashboards-bi" target="_blank" rel="noopener">Código fuente</a></footer>
+<div id="tip" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

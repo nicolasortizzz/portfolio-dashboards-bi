@@ -49,8 +49,10 @@ def format_ars_compact(amount_ars: float) -> str:
     """Etiqueta corta en pesos (formato AR): p. ej. ARS 109,2 M."""
     sign = "-" if amount_ars < 0 else ""
     x = abs(amount_ars)
+    if x >= 1_000_000_000:
+        return f"{sign}ARS {_fmt_decimal_comma(x / 1_000_000_000, 2)} mil M"
     if x >= 1_000_000:
-        return f"{sign}ARS {_fmt_decimal_comma(x / 1_000_000, 1)} M"
+        return f"{sign}ARS {_fmt_decimal_comma(x / 1_000_000, 1)} MM"
     if x >= 1_000:
         return f"{sign}ARS {_fmt_decimal_comma(x / 1_000, 1)} k"
     return f"{sign}ARS {_fmt_decimal_comma(x, 0)}"
@@ -60,8 +62,10 @@ def format_usd_compact(amount_usd: float) -> str:
     """Etiqueta corta en USD: p. ej. USD 72,1 k."""
     sign = "-" if amount_usd < 0 else ""
     x = abs(amount_usd)
+    if x >= 1_000_000_000:
+        return f"{sign}USD {_fmt_decimal_comma(x / 1_000_000_000, 2)} mil M"
     if x >= 1_000_000:
-        return f"{sign}USD {_fmt_decimal_comma(x / 1_000_000, 1)} M"
+        return f"{sign}USD {_fmt_decimal_comma(x / 1_000_000, 1)} MM"
     if x >= 1_000:
         return f"{sign}USD {_fmt_decimal_comma(x / 1_000, 1)} k"
     return f"{sign}USD {_fmt_decimal_comma(x, 1)}"

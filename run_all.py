@@ -19,6 +19,7 @@ def run(script: str) -> None:
 
 def main() -> None:
     run("generate_data.py")
+    run("check_reconciliation.py")
     run("build_excel.py")
     run("render_dashboards.py")
     print("\nPipeline completado.")

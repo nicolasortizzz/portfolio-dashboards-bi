@@ -117,16 +117,18 @@ def generate_financiero(rng: random.Random, months: list[pd.Timestamp], rate: fl
     for i, m in enumerate(months):
         season = 1.0 + 0.12 * np.sin(2 * np.pi * i / 12)
         growth = 1.0 + 0.018 * i
-        ingresos = base_revenue * season * growth * (1 + rng.uniform(-0.04, 0.04))
-        cogs = ingresos * rng.uniform(0.52, 0.58)
+        ingresos = round(base_revenue * season * growth * (1 + rng.uniform(-0.04, 0.04)), 2)
+        cogs = round(ingresos * rng.uniform(0.52, 0.58), 2)
         gross = ingresos - cogs
-        opex = ingresos * rng.uniform(0.22, 0.28)
+        opex = round(ingresos * rng.uniform(0.22, 0.28), 2)
         ebitda = gross - opex
-        dep = ingresos * 0.015
+        dep = round(ingresos * 0.015, 2)
         ebit = ebitda - dep
-        fin = ingresos * rng.uniform(-0.012, 0.008)
-        imp = max(0, ebit * 0.25)
-        net = ebit - fin - imp
+        # Resultado financiero con signo (negativo = costo financiero neto)
+        fin = round(ingresos * rng.uniform(-0.012, 0.008), 2)
+        ebt = ebit + fin
+        imp = round(max(0, ebt * 0.25), 2)
+        net = ebt - imp
 
         rows_pl.append(
             {
@@ -173,8 +175,11 @@ def generate_financiero(rng: random.Random, months: list[pd.Timestamp], rate: fl
         delta_wc = 0.0 if prev_wc is None else wc - prev_wc
         prev_wc = wc
 
-        # Flujo operativo: resultado neto + partidas no monetarias − Δ capital de trabajo
-        flujo_operativo = net + dep - delta_wc
+        # Flujo operativo ANTES de capital de trabajo: resultado neto + depreciación.
+        # La variación de capital de trabajo se informa en su propia columna (no se suma dos veces):
+        # flujo_neto = flujo_operativo + variacion_ct + inversiones + flujo_financiero
+        flujo_operativo = round(net + dep, 2)
+        delta_wc = round(delta_wc, 2)
 
         if i % 9 == 5:
             capex = -ingresos * rng.uniform(0.10, 0.16)
@@ -190,8 +195,10 @@ def generate_financiero(rng: random.Random, months: list[pd.Timestamp], rate: fl
         else:
             flujo_financiero = -fin * rng.uniform(0.4, 0.9)
 
-        flujo_neto = flujo_operativo + capex + flujo_financiero
-        saldo_caja += flujo_neto
+        capex = round(capex, 2)
+        flujo_financiero = round(flujo_financiero, 2)
+        flujo_neto = round(flujo_operativo - delta_wc + capex + flujo_financiero, 2)
+        saldo_caja = round(saldo_caja + flujo_neto, 2)
 
         rows_cf.append(
             {
@@ -239,7 +246,15 @@ def generate_financiero(rng: random.Random, months: list[pd.Timestamp], rate: fl
     pd.DataFrame(rows_bvr).to_csv(DATA_DIR / "financiero_presupuesto_vs_real.csv", index=False)
 
 
-def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float) -> None:
+def split_exact(total: float, weights) -> list[float]:
+    """Reparte total según pesos, redondeado a 2 decimales; el último absorbe el residuo (suma exacta)."""
+    w = np.array(weights, dtype=float); w = w / w.sum()
+    parts = [round(total * x, 2) for x in w[:-1]]
+    parts.append(round(total - sum(parts), 2))
+    return parts
+
+
+def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float, pl: pd.DataFrame) -> None:
     monthly = []
     by_product = []
     by_channel = []
@@ -250,22 +265,24 @@ def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float)
     weights_reg = [0.22, 0.18, 0.14, 0.16, 0.15, 0.15]
 
     for i, m in enumerate(months):
-        total = 85_000_000 * (1 + 0.018 * i) * (1 + rng.uniform(-0.05, 0.05))
+        # Ventas netas = Ingresos del estado de resultados (misma fuente)
+        total = float(pl.iloc[i]["ingresos_ars"])
+        prod_shares = [rng.random() + 0.5 for _ in PRODUCTS]
+        prod_amts = split_exact(total, prod_shares)
+        prod_units = [int(a / rng.uniform(800, 2500)) for a in prod_amts]
+        units_total = sum(prod_units)
         monthly.append(
             {
                 "empresa": COMPANY,
                 "mes": m.strftime("%Y-%m"),
                 "ventas_netas_ars": round(total, 2),
                 "ventas_netas_usd": ars_to_usd(total, rate),
-                "unidades": int(total / 4500),
-                "ticket_promedio_ars": round(total / max(1, int(total / 4500)), 2),
+                "unidades": units_total,
+                "ticket_promedio_ars": round(total / units_total, 2),
             }
         )
 
-        prod_shares = np.array([rng.random() for _ in PRODUCTS], dtype=float)
-        prod_shares /= prod_shares.sum()
-        for (sku, name), share in zip(PRODUCTS, prod_shares):
-            amt = total * share
+        for (sku, name), amt, u in zip(PRODUCTS, prod_amts, prod_units):
             by_product.append(
                 {
                     "empresa": COMPANY,
@@ -274,12 +291,12 @@ def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float)
                     "producto": name,
                     "ventas_ars": round(amt, 2),
                     "ventas_usd": ars_to_usd(amt, rate),
-                    "unidades": int(amt / rng.uniform(800, 2500)),
+                    "unidades": u,
                 }
             )
 
-        for ch, w in zip(CHANNELS, weights_ch):
-            amt = total * w * (1 + rng.uniform(-0.08, 0.08))
+        ch_amts = split_exact(total, [w * (1 + rng.uniform(-0.08, 0.08)) for w in weights_ch])
+        for ch, amt in zip(CHANNELS, ch_amts):
             by_channel.append(
                 {
                     "empresa": COMPANY,
@@ -290,8 +307,8 @@ def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float)
                 }
             )
 
-        for reg, w in zip(REGIONS, weights_reg):
-            amt = total * w * (1 + rng.uniform(-0.1, 0.1))
+        reg_amts = split_exact(total, [w * (1 + rng.uniform(-0.1, 0.1)) for w in weights_reg])
+        for reg, amt in zip(REGIONS, reg_amts):
             by_region.append(
                 {
                     "empresa": COMPANY,
@@ -302,8 +319,10 @@ def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float)
                 }
             )
 
-    for rank, (cid, cname) in enumerate(CLIENTS, start=1):
-        base = rng.uniform(12_000_000, 48_000_000)
+    # Top 10 clientes = ~35% de los ingresos de los últimos 12 meses (subconjunto consistente)
+    ltm = float(pl["ingresos_ars"].iloc[-12:].sum())
+    cli_amts = split_exact(ltm * 0.35, [rng.uniform(1, 4) for _ in CLIENTS])
+    for rank, ((cid, cname), base) in enumerate(zip(CLIENTS, cli_amts), start=1):
         client_rows.append(
             {
                 "empresa": COMPANY,
@@ -325,17 +344,21 @@ def generate_ventas(rng: random.Random, months: list[pd.Timestamp], rate: float)
     pd.DataFrame(client_rows).to_csv(DATA_DIR / "ventas_top_clientes.csv", index=False)
 
 
-def generate_costos(rng: random.Random, months: list[pd.Timestamp], rate: float) -> None:
+def generate_costos(rng: random.Random, months: list[pd.Timestamp], rate: float, pl: pd.DataFrame, units: pd.DataFrame) -> None:
     fv_rows = []
     cc_rows = []
     unit_rows = []
     var_rows = []
 
     for i, m in enumerate(months):
-        vol = 18_000 + i * 350 + rng.randint(-800, 800)
-        fixed = 22_000_000 * (1 + 0.01 * i)
-        variable = vol * rng.uniform(2100, 2600)
-        total = fixed + variable
+        # Costo total = Costo de ventas + Gastos operativos del P&L (excluye depreciación)
+        row = pl.iloc[i]
+        mes = m.strftime("%Y-%m")
+        u_m = units[units["mes"] == mes]
+        vol = int(u_m["unidades"].sum())
+        total = round(float(row["costo_ventas_ars"]) + float(row["gastos_operativos_ars"]), 2)
+        fixed = round(22_000_000 * (1 + 0.01 * i), 2)
+        variable = round(total - fixed, 2)
         fv_rows.append(
             {
                 "empresa": COMPANY,
@@ -351,8 +374,8 @@ def generate_costos(rng: random.Random, months: list[pd.Timestamp], rate: float)
         )
 
         shares = [0.42, 0.28, 0.18, 0.12]
-        for (cc_id, cc_name), sh in zip(COST_CENTERS, shares):
-            amt = total * sh * (1 + rng.uniform(-0.05, 0.05))
+        cc_amts = split_exact(total, [sh * (1 + rng.uniform(-0.05, 0.05)) for sh in shares])
+        for (cc_id, cc_name), amt in zip(COST_CENTERS, cc_amts):
             cc_rows.append(
                 {
                     "empresa": COMPANY,
@@ -364,8 +387,10 @@ def generate_costos(rng: random.Random, months: list[pd.Timestamp], rate: float)
                 }
             )
 
-        for sku, name in PRODUCTS[:4]:
-            uc = rng.uniform(900, 1800) * (1 + 0.008 * i)
+        # Costo de ventas asignado por SKU (suma exacta = costo de ventas del P&L)
+        cogs_parts = split_exact(float(row["costo_ventas_ars"]), [float(x) * rng.uniform(0.9, 1.1) for x in u_m["unidades"]])
+        for (sku, name), cogs_p, u in zip(PRODUCTS, cogs_parts, u_m["unidades"]):
+            uc = cogs_p / int(u)
             unit_rows.append(
                 {
                     "empresa": COMPANY,
@@ -374,7 +399,8 @@ def generate_costos(rng: random.Random, months: list[pd.Timestamp], rate: float)
                     "producto": name,
                     "costo_unitario_ars": round(uc, 2),
                     "costo_unitario_usd": ars_to_usd(uc, rate),
-                    "unidades": int(vol / len(PRODUCTS[:4])),
+                    "unidades": int(u),
+                    "costo_ventas_ars": cogs_p,
                 }
             )
 
@@ -410,8 +436,10 @@ def main() -> None:
     months = month_range(MONTHS)
 
     generate_financiero(rng, months, rate)
-    generate_ventas(rng, months, rate)
-    generate_costos(rng, months, rate)
+    pl = pd.read_csv(DATA_DIR / "financiero_estado_resultados.csv")
+    generate_ventas(rng, months, rate, pl)
+    units = pd.read_csv(DATA_DIR / "ventas_por_producto.csv")
+    generate_costos(rng, months, rate, pl, units)
 
     print(f"Datos generados en {DATA_DIR} ({MONTHS} meses).")
     print(

@@ -38,7 +38,7 @@ def fmt_axis_ars_ticks(x: float, _pos: int) -> str:
     sign = "-" if x < 0 else ""
     ax = abs(x)
     if ax >= 1_000_000:
-        return f"{sign}{ax / 1_000_000:.0f}M"
+        return f"{sign}{ax / 1_000_000:.0f}MM"
     if ax >= 1_000:
         return f"{sign}{ax / 1_000:.0f}k"
     return f"{sign}{ax:.0f}"
@@ -129,14 +129,14 @@ def render_financiero(rate: float) -> Path:
     kpi_card(
         fig,
         [0.27, 0.82, 0.2, 0.11],
-        "EBITDA",
+        "EBITDA (últ. mes)",
         format_kpi_ars_usd(last["ebitda_ars"], rate),
-        f"Margen {last['ebitda_ars'] / last['ingresos_ars'] * 100:.1f}%",
+        f"Margen EBITDA mensual {last['ebitda_ars'] / last['ingresos_ars'] * 100:.1f}%",
     )
     kpi_card(
         fig,
         [0.49, 0.82, 0.2, 0.11],
-        "Resultado neto",
+        "Resultado neto (últ. mes)",
         format_kpi_ars_usd(last["resultado_neto_ars"], rate),
     )
     kpi_card(

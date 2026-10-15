@@ -76,6 +76,12 @@ Un archivo **Power BI (.pbix)** puede armarse importando los CSV de `data/` y re
 
 ---
 
+### Consistencia de datos
+
+Todos los tableros salen de la misma fuente: ventas por producto, canal y región suman exactamente los ingresos del P&L cada mes; el costo total (y su apertura por centro, fijo/variable y estándar vs. real) es igual a costo de ventas + gastos operativos del P&L. `scripts/check_reconciliation.py` lo verifica mes a mes y falla si algo no cierra (se ejecuta en `run_all.py` / `make check`).
+
+**Convenciones:** MM = millones, mil M = miles de millones; toda cifra indica ARS o USD. **Márgenes:** en tablas, gráficos e imágenes son **mensuales** (resultado del mes / ingresos del mes); en las tarjetas KPI de la web son del **período seleccionado** (acumulado del rango). No se usan márgenes LTM.
+
 ## 1. Dashboard Financiero
 
 Estado de resultados (P&L), flujo de caja y presupuesto vs. real.
@@ -86,13 +92,13 @@ Estado de resultados (P&L), flujo de caja y presupuesto vs. real.
 
 | Métrica | Valor |
 | --- | --- |
-| Ingresos | ARS 115,6 M (USD 76,3 k) |
-| EBITDA (margen 23,1 %) | ARS 26,7 M (USD 17,6 k) |
-| Resultado neto (margen 16,6 %) | ARS 19,2 M (USD 12,7 k) |
-| Flujo neto del mes | ARS 3,5 M (USD 2,3 k) |
-| Saldo de caja acumulado | ARS 357,4 M (USD 236,0 k) |
+| Ingresos | ARS 115,6 MM (USD 76,3 k) |
+| EBITDA (margen EBITDA mensual 23,1 %) | ARS 26,7 MM (USD 17,6 k) |
+| Resultado neto (margen neto mensual 15.9 %) | ARS 18,3 MM (USD 12,1 k) |
+| Flujo neto del mes | ARS 2,6 MM (USD 1,7 k) |
+| Saldo de caja acumulado | ARS 341,7 MM (USD 225,6 k) |
 
-El flujo operativo se arma como **resultado neto + depreciación ± variación de capital de trabajo**; inversiones (capex) y financiamiento aparecen en meses puntuales. **Presupuesto vs. real** por concepto (ingresos, costos, gastos, EBITDA).
+El flujo de caja se presenta sin doble conteo: **flujo operativo (antes de capital de trabajo) = resultado neto + depreciación**; **flujo neto = operativo + variación de capital de trabajo + inversiones + financiamiento**. El resultado neto suma el resultado financiero con su signo (negativo = costo financiero). **Presupuesto vs. real** por concepto (ingresos, costos, gastos, EBITDA).
 
 Archivos: `data/financiero_*.csv` · Excel: `excel/dashboard_financiero.xlsx`
 
@@ -108,12 +114,12 @@ Ventas por mes, producto, canal, región y ranking de clientes (nombres ficticio
 
 | Métrica | Valor |
 | --- | --- |
-| Ventas del mes | ARS 122,5 M (USD 80,9 k) |
-| Acumulado 24 meses | ARS 2.479,7 M (USD 1,6 M) |
-| Unidades / ticket | 27.227 u. · ticket ARS 4,5 k (USD 3,0) |
-| Top cliente 12m | *Hipermercado Andino* — ARS 42,4 M (USD 28,0 k) |
+| Ventas del mes (= ingresos del P&L) | ARS 115,6 MM (USD 76,3 k) |
+| Acumulado 24 meses | ARS 2,47 mil M (USD 1,6 MM) |
+| Unidades / ticket | 61.757 u. · ticket ARS 1,9 k (USD 1,2) |
+| Top cliente 12m | *Almacén El Fogón* — ARS 71,6 MM (USD 47,3 k) |
 
-**Mix por canal** (mayorista ~39 %, retail, e-commerce, venta directa), **ventas por región** y ranking de clientes ficticios.
+**Mix por canal** (mayorista ~36 %, retail, e-commerce, venta directa), **ventas por región** y ranking de clientes ficticios.
 
 Archivos: `data/ventas_*.csv` · Excel: `excel/dashboard_ventas.xlsx`
 
@@ -129,11 +135,11 @@ Costos fijos y variables, por centro de costo, costo unitario y variaciones vs. 
 
 | Métrica | Valor |
 | --- | --- |
-| Costo total | ARS 81,4 M (USD 53,7 k) |
-| Fijos / variables | ARS 27,1 M · ARS 54,3 M |
-| Variación vs. estándar | −1,28 % |
+| Costo total (= costo de ventas + gastos operativos del P&L) | ARS 88,9 MM (USD 58,7 k) |
+| Fijos / variables | ARS 27,1 MM (USD 17,9 k) · ARS 61,9 MM (USD 40,8 k) |
+| Variación vs, estándar | -1,20 % |
 
-**Centros de costo** (producción ~42 %), **costo unitario** por SKU y evolución del costo por unidad producida.
+**Centros de costo** (producción ~42 %), **costo unitario** por SKU (Σ costo de ventas por SKU = costo de ventas del P&L) y evolución del costo por unidad vendida.
 
 Archivos: `data/costos_*.csv` · Excel: `excel/dashboard_costos.xlsx`
 

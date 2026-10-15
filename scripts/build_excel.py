@@ -93,7 +93,7 @@ def build_financiero() -> Path:
             ("Ingresos último mes", format_kpi_ars_usd(last["ingresos_ars"], rate)),
             ("EBITDA último mes", format_kpi_ars_usd(last["ebitda_ars"], rate)),
             ("Resultado neto último mes", format_kpi_ars_usd(last["resultado_neto_ars"], rate)),
-            ("Margen EBITDA", f"{last['ebitda_ars'] / last['ingresos_ars'] * 100:.1f}%"),
+            ("Margen EBITDA (último mes)", f"{last['ebitda_ars'] / last['ingresos_ars'] * 100:.1f}%"),
             ("Flujo neto último mes", format_kpi_ars_usd(last_cf["flujo_neto_ars"], rate)),
             ("Saldo de caja", format_kpi_ars_usd(last_cf["saldo_caja_ars"], rate)),
         ],

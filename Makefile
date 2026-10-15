@@ -1,9 +1,9 @@
-.PHONY: all data excel images clean install
+.PHONY: all data check excel images clean install
 
 PYTHON ?= python3
 VENV ?= .venv
 
-all: install data excel images
+all: install data check excel images
 
 install:
 	$(PYTHON) -m venv $(VENV) 2>/dev/null || true
@@ -11,6 +11,9 @@ install:
 
 data:
 	cd scripts && ../$(VENV)/bin/python generate_data.py
+
+check:
+	cd scripts && ../$(VENV)/bin/python check_reconciliation.py
 
 excel:
 	cd scripts && ../$(VENV)/bin/python build_excel.py

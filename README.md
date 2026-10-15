@@ -6,7 +6,7 @@ Portfolio de **Business Intelligence** con tres tableros de ejemplo para una pym
 
 ## 🌐 Dashboard web interactivo
 
-**Demo online:** _(link de Vercel pendiente — `https://<proyecto>.vercel.app`)_
+**Demo online:** https://nicolasortizzz.github.io/portfolio-dashboards-bi/
 
 App web estática (HTML + [ECharts](https://echarts.apache.org/)) con los tres tableros sobre los mismos datos ficticios de `data/*.csv`:
 
@@ -27,7 +27,7 @@ node scripts/build_web.mjs      # CSV -> site/data/data.json
 npx http-server site            # o: python3 -m http.server -d site
 ```
 
-Deploy en Vercel: ya configurado en `vercel.json` (build `node scripts/build_web.mjs`, output `site/`).
+Publicado en GitHub Pages (rama `gh-pages`, contenido de `site/`). También listo para Vercel vía `vercel.json` (build `node scripts/build_web.mjs`, output `site/`).
 
 ## Tipo de cambio ARS/USD
 

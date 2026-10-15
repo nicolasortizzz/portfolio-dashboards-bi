@@ -1,0 +1,7 @@
+{
+  "buildCommand": "node scripts/build_web.mjs",
+  "outputDirectory": "site",
+  "installCommand": "",
+  "framework": null,
+  "cleanUrls": true
+}

@@ -4,6 +4,31 @@ Portfolio de **Business Intelligence** con tres tableros de ejemplo para una pym
 
 > **Aviso importante:** todos los nombres de empresa, clientes, montos y series temporales son **enteramente ficticios** y se generan con un generador aleatorio con semilla fija (`SEED=42`). No representan operaciones reales ni datos de terceros.
 
+## 🌐 Dashboard web interactivo
+
+**Demo online:** _(link de Vercel pendiente — `https://<proyecto>.vercel.app`)_
+
+App web estática (HTML + [ECharts](https://echarts.apache.org/)) con los tres tableros sobre los mismos datos ficticios de `data/*.csv`:
+
+- **Financiero:** estado de resultados en cascada, ingresos/EBITDA/margen, flujo de caja con saldo, presupuesto vs real.
+- **Ventas:** tendencia con promedio móvil, ventas por producto, región y canal, top clientes.
+- **Costos:** fijos vs variables, costos por centro, estándar vs real (desvíos), costo unitario por producto.
+
+Interactividad: filtro de rango de meses (3M/6M/12M/Todo), filtros por producto, región, canal y centro de costo, **toggle ARS/USD** (tipo de cambio BCRA de `config/exchange_rate.json`, con fecha y fuente), drill-down con clic en gráficos, KPIs con variación MoM/YoY, tablas ordenables con **exportación a CSV**, modo claro/oscuro y diseño responsive.
+
+| Financiero | Ventas | Costos |
+|---|---|---|
+| ![Financiero](images/web/financiero.png) | ![Ventas](images/web/ventas.png) | ![Costos](images/web/costos.png) |
+
+Correr localmente:
+
+```bash
+node scripts/build_web.mjs      # CSV -> site/data/data.json
+npx http-server site            # o: python3 -m http.server -d site
+```
+
+Deploy en Vercel: ya configurado en `vercel.json` (build `node scripts/build_web.mjs`, output `site/`).
+
 ## Tipo de cambio ARS/USD
 
 Las columnas en dólares se calculan con el tipo de cambio documentado en `config/exchange_rate.json`:
